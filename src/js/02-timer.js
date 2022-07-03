@@ -1,17 +1,15 @@
 // const flatpickr = require("flatpickr");
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
+import Notiflix from 'notiflix';
 
 const startBtnTimer = document.querySelector('[data-start]');
 const timerDays = document.querySelector('[data-days]');
 const timerHours = document.querySelector('[data-hours]');
 const timerMinutes = document.querySelector('[data-minutes]');
 const timerSeconds = document.querySelector('[data-seconds]');
-
-let dateNow;
 let selectedDate;
-
-startBtnTimer.setAttribute('disabled', '');
+let timerId = null;
 
 const options = {
   enableTime: true,
@@ -19,9 +17,8 @@ const options = {
   defaultDate: new Date(),
   minuteIncrement: 1,
     onClose(selectedDates) {
-        dateNow = Date.now()
-        if (dateNow > selectedDates[0]) {
-            window.alert('Please choose a date in the future');
+        if (Date.now() > selectedDates[0]) {
+            Notiflix.Notify.failure('Please choose a date in the future');
             return;
         }
         startBtnTimer.removeAttribute('disabled')
@@ -31,18 +28,30 @@ const options = {
   },
 };
 
+startBtnTimer.setAttribute('disabled', '');
+
 flatpickr('#datetime-picker', options);
 
-startBtnTimer.addEventListener('click', () => {
-    setInterval(() => {
+startBtnTimer.addEventListener('click', timerStart);
+
+function timerStart() {
+    Notiflix.Notify.success('Timer start');
+    timerId = setInterval(() => {
         const difTime = selectedDate - Date.now();
         const { days, hours, minutes, seconds } = convertMs(difTime);
-        timerDays.textContent = days;
-        timerHours.textContent = hours;
-        timerMinutes.textContent = minutes;
-        timerSeconds.textContent = seconds;
-    }, 1000)
-});
+        timerDays.textContent = addLeadingZero(days);
+        timerHours.textContent = addLeadingZero(hours);
+        timerMinutes.textContent = addLeadingZero(minutes);
+        timerSeconds.textContent = addLeadingZero(seconds);
+
+     if (days === 0 && hours === 0 && minutes === 0 && seconds === 0) {
+            clearInterval(timerId);
+            startBtnTimer.setAttribute('disabled', '');
+            Notiflix.Notify.info('Time is over');
+         
+        }
+    }, 1000);
+}
 
 
 function convertMs(ms) {
@@ -62,5 +71,8 @@ function convertMs(ms) {
   const seconds = Math.floor((((ms % day) % hour) % minute) / second);
 
     return { days, hours, minutes, seconds };
-}
+};
 
+function addLeadingZero(value) {
+   return value.toString().padStart(2, '0');
+}
